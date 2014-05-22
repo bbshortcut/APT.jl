@@ -1,3 +1,5 @@
 # APT
 
-[![Build Status](https://travis-ci.org/bbshortcut/APT.jl.png)](https://travis-ci.org/bbshortcut/APT.jl)
+*APT* is a module to manipulate Debian Advanced Package Tool (APT).
+It comes with *pnlt*, an executable that allows to manage package name
+lists.

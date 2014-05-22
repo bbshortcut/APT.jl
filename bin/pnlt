@@ -1,0 +1,100 @@
+#!/usr/bin/env julia
+# Package Name List Tool
+# 
+# This tool allows to maintain a package name list so that one may
+# personalize a fresh Debian installation easily.
+# 
+# $ pnlt install [pkgnames...]: Install packages and add their names
+# to the list of packages to add.
+# 
+# $ pnlt uninstall [pkgnames...]: Remove packages and remove their
+# names from the list of packages to add.
+# 
+# $ pnlt remove [pkgnames...]: Remove packages and add their names to
+# the list of packages to remove.
+# 
+# $ pnlt unremove [pkgnames...]: Install packages and remove their
+# names from the list of packages to remove.
+
+using APT
+
+const PNLT_DB = "$(ENV["HOME"])/.pnlt.db"
+const ARGC = length(ARGS)
+
+function getpkgs()
+    if !success(`ls $(PNLT_DB)`)
+        run(`touch $(PNLT_DB)`)
+        installpkgs = Package[]
+        removepkgs = Package[]
+    else
+        installpkgs, removepkgs = readpkgs(PNLT_DB)
+    end
+
+    (installpkgs, removepkgs)
+end
+
+function ascii(args::Vector{Any})
+    asciis = ASCIIString[]
+
+    for arg in args
+        push!(asciis, arg)
+    end
+
+    asciis
+end
+
+## Main
+
+if ARGC >= 1
+    if ARGS[1] == "install"
+        if ARGC > 1
+            installpkgs, removepkgs = getpkgs()
+            names = ascii(ARGS[2:end])
+
+            update()
+            install(names)
+            clean()
+
+            addpkgs!(names, installpkgs, removepkgs)
+            writepkgs(PNLT_DB, installpkgs, removepkgs)
+        else
+            error("No pkgname provided.\nUsage: pnlt install [pkgnames...]")
+        end
+    elseif ARGS[1] == "uninstall"
+        if ARGC > 1
+            installpkgs, removepkgs = getpkgs()
+            names = ascii(ARGS[2:end])
+
+            remove(names)
+
+            rmpkgs!(names, installpkgs)
+            writepkgs(PNLT_DB, installpkgs, removepkgs)
+        else
+            error("No pkgname provided.\nUsage: pnlt uninstall [pkgnames...]")
+        end
+    elseif ARGS[1] == "remove"
+        if ARGC > 1
+            installpkgs, removepkgs = getpkgs()
+            names = ascii(ARGS[2:end])
+
+            remove(names)
+
+            addpkgs!(names, removepkgs, installpkgs)
+            writepkgs(PNLT_DB, installpkgs, removepkgs)
+        else
+            error("No pkgname provided.\nUsage: pnlt remove [pkgnames...]")
+        end
+    elseif ARGS[1] == "unremove"
+        if ARGC > 1
+            installpkgs, removepkgs = getpkgs()
+            names = ascii(ARGS[2:end])
+
+            install(names)
+
+            rmpkgs!(names, removepkgs)
+            writepkgs(PNLT_DB, installpkgs, removepkgs)
+        else
+            error("No pkgname provided.\nUsage: pnlt unremove [pkgnames...]")
+        end
+    end
+end
